@@ -1,0 +1,165 @@
+{
+  "$schema": "https://vega.github.io/schema/vega/v5.json",
+  "background": "lightgrey",
+  "width": 400,
+  "height": 400,
+  "signals": [
+    {
+      "name": "age_selector",
+      "value": "[15,25)",
+      "bind": {
+        "input": "select",
+        "options": ["[15,25)", "[25,35)", "[35,45)", "[45,Inf)", "Unknown"]
+      }
+    },
+    {
+      "name": "sex_selector",
+      "value": "Female",
+      "bind": {"input": "select", "options": ["Female", "Male", "Unknown"]}
+    }
+  ],
+  "data": [
+    {
+      "name": "table",
+      "url": "https://gist.githubusercontent.com/dataviscourse1/98b31358b594c4af79efe6b7c90791d8/raw/830793cdae0375908acc8d686c5aa4fcf3b47ad1/hour_final.json",
+      "transform": [
+        {"type": "filter", "expr": "datum.age_group_2 ==  age_selector"},
+        {"type": "filter", "expr": "datum.gender ==  sex_selector"},
+        {
+          "type": "aggregate",
+          "fields": ["n"],
+          "ops": ["sum"],
+          "groupby": ["hour"],
+          "as": ["balance"]
+        },
+        {"type": "formula", "as": "hour_plus1", "expr": "datum.hour +1"},
+        {"type": "formula", "as": "half_width", "expr": "width/2"},
+        {"type": "formula", "as": "half_height", "expr": "height/2"},
+        {"type": "formula", "as": "hour_plus1", "expr": "datum.hour + 1"},
+        {
+          "type": "formula",
+          "as": "tooltip_text",
+          "expr": "'Hour: ' + toString(datum.hour) + ' ; number: ' + toString(datum.balance)"
+        },
+        {"type": "formula", "as": "slice_angle", "expr": "(2*PI)/24"},
+        {
+          "type": "formula",
+          "as": "text_x",
+          "expr": "200+100*cos(datum.slice_angle*datum.hour_plus1 - PI/2 - (datum.slice_angle/2))"
+        },
+        {
+          "type": "formula",
+          "as": "text_y",
+          "expr": "200+100*sin(datum.slice_angle*datum.hour_plus1 - PI/2 - (datum.slice_angle/2))"
+        }
+      ]
+    }
+  ],
+  "scales": [
+    {
+      "name": "rScale",
+      "type": "linear",
+      "domain": {"data": "table", "field": "balance"},
+      "range": [20, 180]
+    },
+    {
+      "name": "thetaScale",
+      "type": "linear",
+      "domain": {"data": "table", "field": "hour"},
+      "range": [0, 6]
+    },
+    {
+      "name": "colourScale",
+      "type": "linear",
+      "domain": {"data": "table", "field": "balance"},
+      "range": {"scheme": "darkblue"}
+    }
+  ],
+  "marks": [
+    {
+      "type": "arc",
+      "from": {"data": "table"},
+      "encode": {
+        "enter": {
+          "startAngle": {"field": "hour", "scale": "thetaScale"},
+          "endAngle": {"field": "hour_plus1", "scale": "thetaScale"},
+          "innerRadius": {"value": 20},
+          "x": {"field": "half_width"},
+          "y": {"field": "half_height"},
+          "fill": {"field": "balance", "scale": "colourScale"}
+        },
+        "update": {
+          "outerRadius": {"field": "balance", "scale": "rScale"},
+          "tooltip": {"field": "tooltip_text"}
+        }
+      }
+    },
+    {
+      "type": "text",
+      "from": {"data": "table"},
+      "encode": {
+        "enter": {
+          "text": {"field": "hour_plus1"},
+          "x": {"field": "text_x"},
+          "y": {"field": "text_y"},
+          "align": {"value": "center"},
+          "baseline": {"value": "middle"},
+          "fontSize": {"value": 10},
+          "fill": {"value": "black"}
+        }
+      }
+    },
+    {
+      "type": "rule",
+      "encode": {
+        "enter": {
+          "x": {"value": 200},
+          "y": {"value": 20},
+          "x2": {"value": 200},
+          "y2": {"value": 380},
+          "stroke": {"value": "lightgrey"}
+        }
+      }
+    },
+    {
+      "type": "rule",
+      "encode": {
+        "enter": {
+          "x": {"value": 20},
+          "y": {"value": 200},
+          "x2": {"value": 380},
+          "y2": {"value": 200},
+          "stroke": {"value": "lightgrey"}
+        }
+      }
+    },
+    {
+      "type": "text",
+      "encode": {
+        "enter": {
+          "text": {"value": ["hour of day VS gender VS Songs num"]},
+          "x": {"value": 20},
+          "y": {"value": 20},
+          "align": {"value": "left"},
+          "baseline": {"value": "middle"},
+          "fontSize": {"value": 20},
+          "fill": {"value": "black"}
+        }
+      }
+    },
+    {
+      "type": "text",
+      "encode": {
+        "enter": {
+          "text": {"value": ["Different color opacity means different time"]},
+          "x": {"value": 220},
+          "y": {"value": 380},
+          "align": {"value": "left"},
+          "baseline": {"value": "middle"},
+          "fontSize": {"value": 10},
+          "fill": {"value": "black"}
+        }
+      }
+    }
+  ]
+}
