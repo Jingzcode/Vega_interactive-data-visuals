@@ -1,0 +1,144 @@
+{
+  "$schema": "https://vega.github.io/schema/vega/v5.json",
+  "description": "Sweden",
+  "height": 400,
+  "padding": 5,
+  "signals": [
+    {"name": "chartWidth", "value": 300},
+    {"name": "chartPad", "value": 20},
+    {"name": "width", "update": "2 * chartWidth + chartPad"},
+    {
+      "name": "year",
+      "value": 2021,
+      "bind": {"input": "range", "min": 1997, "max": 2021, "step": 1}
+    }
+  ],
+  "data": [
+    {
+      "name": "population",
+      "url": "https://gist.githubusercontent.com/Jing12Z/1f6bb18c81c4f048f059bf3afe3bd267/raw/f3db590f326b6c1dc7b48e7be09913ccdc438d7e/1111.json",
+      "transform": [{"type": "filter", "expr": "datum.Age!= 'Total'"}]
+    },
+    {
+      "name": "popYear",
+      "source": "population",
+      "transform": [{"type": "filter", "expr": "datum.Year == year"}]
+    },
+    {
+      "name": "males",
+      "source": "popYear",
+      "transform": [{"type": "filter", "expr": "datum.Sex == 1"}]
+    },
+    {
+      "name": "females",
+      "source": "popYear",
+      "transform": [{"type": "filter", "expr": "datum.Sex == 2"}]
+    },
+    {
+      "name": "ageGroups",
+      "source": "population",
+      "transform": [{"type": "aggregate", "groupby": ["Age"]}]
+    }
+  ],
+  "scales": [
+    {
+      "name": "y",
+      "type": "band",
+      "range": [{"signal": "height"}, 0],
+      "round": true,
+      "domain": {"data": "ageGroups", "field": "Age"}
+    },
+    {
+      "name": "c",
+      "type": "ordinal",
+      "domain": [1, 2],
+      "range": ["#d5855a", "#6c4e97"]
+    }
+  ],
+  "marks": [
+    {
+      "type": "text",
+      "interactive": false,
+      "from": {"data": "ageGroups"},
+      "encode": {
+        "enter": {
+          "x": {"signal": "chartWidth + chartPad / 2"},
+          "y": {"scale": "y", "field": "Age", "band": 0.5},
+          "text": {"field": "Age"},
+          "baseline": {"value": "middle"},
+          "align": {"value": "center"},
+          "fill": {"value": "#000"}
+        }
+      }
+    },
+    {
+      "type": "group",
+      "encode": {"update": {"x": {"value": 0}, "height": {"signal": "height"}}},
+      "scales": [
+        {
+          "name": "x",
+          "type": "linear",
+          "range": [{"signal": "chartWidth"}, 0],
+          "nice": true,
+          "zero": true,
+          "domain": {"data": "population", "field": "value"}
+        }
+      ],
+      "axes": [{"orient": "bottom", "scale": "x", "title": "Females"}],
+      "marks": [
+        {
+          "name": "bars",
+          "type": "rect",
+          "from": {"data": "females"},
+          "encode": {
+            "enter": {
+              "x": {"scale": "x", "field": "value"},
+              "x2": {"scale": "x", "value": 0},
+              "y": {"scale": "y", "field": "Age"},
+              "height": {"scale": "y", "band": 1, "offset": -1},
+              "fillOpacity": {"value": 0.6},
+              "fill": {"scale": "c", "field": "Sex"}
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "group",
+      "encode": {
+        "update": {
+          "x": {"signal": "chartWidth + chartPad"},
+          "height": {"signal": "height"}
+        }
+      },
+      "scales": [
+        {
+          "name": "x",
+          "type": "linear",
+          "range": [0, {"signal": "chartWidth"}],
+          "nice": true,
+          "zero": true,
+          "domain": {"data": "population", "field": "value"}
+        }
+      ],
+      "axes": [{"orient": "bottom", "scale": "x", "title": "Males"}],
+      "marks": [
+        {
+          "type": "rect",
+          "from": {"data": "males"},
+          "encode": {
+            "enter": {
+              "x": {"scale": "x", "field": "value"},
+              "x2": {"scale": "x", "value": 0},
+              "y": {"scale": "y", "field": "Age"},
+              "height": {"scale": "y", "band": 1, "offset": -1},
+              "fillOpacity": {"value": 0.6},
+              "fill": {"scale": "c", "field": "Sex"}
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "config": {}
+}
