@@ -1,0 +1,299 @@
+{
+  "$schema": "https://vega.github.io/schema/vega/v5.json",
+  "description": "A scatter plot example with interactive legend and x-axis.",
+  "width": 200,
+  "height": 200,
+  "padding": 5,
+  "autosize": "pad",
+  "signals": [
+    {"name": "tx", "update": "width / 2"},
+    {"name": "ty", "update": "height / 2"},
+    {
+      "name": "angles",
+      "value": [0, 0],
+      "on": [{"events": "mousedown", "update": "[rotateX, centerY]"}]
+    },
+    {
+      "name": "scale",
+      "value": 150,
+      "on": [
+        {
+          "events": {"type": "wheel", "consume": true},
+          "update": "clamp(scale * pow(1.0005, -event.deltaY * pow(16, event.deltaMode)), 150, 3000)"
+        }
+      ]
+    },
+    {
+      "name": "rotateX",
+      "value": 0,
+      "on": [
+        {"events": {"signal": "delta1"}, "update": "angles[0] + delta1[0]"}
+      ]
+    },
+    {
+      "name": "centerY",
+      "value": 0,
+      "on": [
+        {
+          "events": {"signal": "delta1"},
+          "update": "clamp(angles[1] + delta1[1], -60, 60)"
+        }
+      ]
+    },
+    {
+      "name": "clear",
+      "value": true,
+      "on": [
+        {"events": "mouseup[!event.item]", "update": "true", "force": true}
+      ]
+    },
+    {
+      "name": "shift",
+      "value": false,
+      "on": [
+        {
+          "events": "@legendSymbol:click, @legendLabel:click",
+          "update": "event.shiftKey",
+          "force": true
+        }
+      ]
+    },
+    {
+      "name": "clicked",
+      "value": null,
+      "on": [
+        {
+          "events": "@legendSymbol:click, @legendLabel:click",
+          "update": "{value: datum.value}",
+          "force": true
+        }
+      ]
+    },
+    {
+      "name": "brush",
+      "value": 0,
+      "on": [
+        {"events": {"signal": "clear"}, "update": "clear ? [0, 0] : brush"},
+        {"events": "@xaxis:mousedown", "update": "[x(), x()]"},
+        {
+          "events": "[@xaxis:mousedown, window:mouseup] > window:mousemove!",
+          "update": "[brush[0], clamp(x(), 0, width)]"
+        },
+        {
+          "events": {"signal": "delta"},
+          "update": "clampRange([anchor[0] + delta, anchor[1] + delta], 0, width)"
+        }
+      ]
+    },
+    {
+      "name": "anchor",
+      "value": null,
+      "on": [{"events": "@brush:mousedown", "update": "slice(brush)"}]
+    },
+    {
+      "name": "xdown",
+      "value": 0,
+      "on": [{"events": "@brush:mousedown", "update": "x()"}]
+    },
+    {
+      "name": "delta",
+      "value": 0,
+      "on": [
+        {
+          "events": "[@brush:mousedown, window:mouseup] > window:mousemove!",
+          "update": "x() - xdown"
+        }
+      ]
+    },
+    {
+      "name": "domain",
+      "on": [
+        {
+          "events": {"signal": "brush"},
+          "update": "span(brush) ? invert('x', brush) : null"
+        }
+      ]
+    },
+    {
+      "name": "start",
+      "value": null,
+      "on": [{"events": "mousedown", "update": "invert(cloned, xy())"}]
+    },
+    {
+      "name": "drag",
+      "value": null,
+      "on": [
+        {
+          "events": "[mousedown, window:mouseup] > window:mousemove",
+          "update": "invert(cloned, xy())"
+        }
+      ]
+    },
+    {
+      "name": "cloned",
+      "value": null,
+      "on": [{"events": "mousedown", "update": "copy('projection')"}]
+    },
+    {
+      "name": "delta1",
+      "value": null,
+      "on": [
+        {
+          "events": {"signal": "drag"},
+          "update": "[drag[0] - start[0], start[1] - drag[1]]"
+        }
+      ]
+    }
+  ],
+  "projections": [
+    {
+      "name": "projection",
+      "type": "mollweide",
+      "scale": {"signal": "scale"},
+      "rotate": [{"signal": "rotateX"}, 0, 0],
+      "center": [0, {"signal": "centerY"}],
+      "translate": [{"signal": "tx"}, {"signal": "ty"}]
+    }
+  ],
+  "data": [
+    {
+      "name": "source",
+      "url": "https://gist.githubusercontent.com/Jing12Z/c5fed4e88dec562b0f82636e69b517d3/raw/60e96fc006353bdcc3f6249affe72f4a956708e5/12.csv",
+      "format": {"type": "csv", "parse": "auto", "delimiter": ","},
+      "transform": [
+        {"type": "filter", "expr": "datum.n!= 'NA'"},
+        {"type": "formula", "as": "n_num", "expr": "toNumber(datum.n)"}
+      ]
+    },
+    {
+      "name": "selected",
+      "on": [
+        {"trigger": "clear", "remove": true},
+        {"trigger": "!shift", "remove": true},
+        {"trigger": "!shift && clicked", "insert": "clicked"},
+        {"trigger": "shift && clicked", "toggle": "clicked"}
+      ]
+    },
+    {
+      "name": "world",
+      "url": "data/world-110m.json",
+      "format": {"type": "topojson", "feature": "countries"},
+      "transform": [
+        {
+          "type": "lookup",
+          "from": "source",
+          "key": "id",
+          "fields": ["id"],
+          "values": ["n_num", "name", "prev"]
+        },
+        {"type": "filter", "expr": "datum.n_num != null"}
+      ]
+    },
+    {
+      "name": "graticule",
+      "transform": [{"type": "graticule", "step": [15, 15]}]
+    }
+  ],
+  "scales": [
+    {
+      "name": "fill",
+      "type": "linear",
+      "domain": {"data": "source", "field": "n_num"},
+      "range": {"scheme": "darkblue"},
+      "reverse": true,
+      "zero": true,
+      "interpolate": "hcl"
+    },
+    {
+      "name": "color",
+      "type": "ordinal",
+      "range": {"scheme": "category10"},
+      "domain": {"data": "source", "field": "prev"}
+    }
+  ],
+  "legends": [
+    {
+      "stroke": "color",
+      "title": "Origin",
+      "encode": {
+        "symbols": {
+          "name": "legendSymbol",
+          "interactive": true,
+          "update": {
+            "fill": {"value": "transparent"},
+            "strokeWidth": {"value": 2},
+            "opacity": [
+              {
+                "test": "!length(data('selected')) || indata('selected', 'value', datum.value)",
+                "value": 0.7
+              },
+              {"value": 0.15}
+            ],
+            "size": {"value": 64}
+          }
+        },
+        "labels": {
+          "name": "legendLabel",
+          "interactive": true,
+          "update": {
+            "opacity": [
+              {
+                "test": "!length(data('selected')) || indata('selected', 'value', datum.value)",
+                "value": 1
+              },
+              {"value": 0.25}
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "marks": [
+    {
+      "type": "shape",
+      "from": {"data": "graticule"},
+      "encode": {
+        "enter": {
+          "strokeWidth": {"value": 1},
+          "stroke": {"value": "#ddd"},
+          "fill": {"scale": "fill", "field": "n_num"}
+        }
+      },
+      "transform": [{"type": "geoshape", "projection": "projection"}]
+    },
+    {
+      "name": "marks",
+      "type": "shape",
+      "from": {"data": "world"},
+      "interactive": false,
+      "encode": {
+        "enter": {
+          "tooltip": {"signal": "{title:datum.name, 'number': datum.n_num}"},
+          "strokeWidth": {"value": 0.5},
+          "stroke": {"value": "#bbb"},
+          "fill": {"scale": "fill", "field": "n_num"}
+        },
+        "update": {
+          "opacity": [
+            {
+              "test": "(!domain || inrange(datum.n_num, domain)) && (!length(data('selected')) || indata('selected', 'value', datum.Origin))",
+              "value": 0.7
+            },
+            {"value": 0.15}
+          ],
+          "stroke": [
+            {
+              "test": "(!domain || inrange(datum.n_num, domain)) && (!length(data('selected')) || indata('selected', 'value', datum.Origin))",
+              "scale": "color",
+              "field": "Origin"
+            },
+            {"value": "#ccc"}
+          ],
+          "fill": {"value": "transparent"}
+        }
+      },
+      "transform": [{"type": "geoshape", "projection": "projection"}]
+    }
+  ],
+  "config": {}
+}
