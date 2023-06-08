@@ -1,0 +1,191 @@
+{
+  "$schema": "https://vega.github.io/schema/vega/v5.json",
+  "description": "Sweden",
+  "height": 400,
+  "padding": 5,
+  "signals": [
+    {"name": "chartWidth", "value": 300},
+    {"name": "chartPad", "value": 20},
+    {"name": "width", "update": "2 * chartWidth + chartPad"},
+    {
+      "name": "year",
+      "value": 2021,
+      "bind": {"input": "range", "min": 1997, "max": 2021, "step": 1}
+    }
+  ],
+  "data": [
+    {
+      "name": "population",
+      "url": "https://gist.githubusercontent.com/Jing12Z/25c3302704848bb44ad1b24d8304173e/raw/c195c7076277d438122e18f5d36a74ec4a48c2f7/3333.json",
+      "transform": [{"type": "filter", "expr": "datum.Age!= 'Total'"}]
+    },
+    {
+      "name": "popYear",
+      "source": "population",
+      "transform": [{"type": "filter", "expr": "datum.Year == year"}]
+    },
+    {
+      "name": "males",
+      "source": "popYear",
+      "transform": [{"type": "filter", "expr": "datum.Sex == 'Men'"}]
+    },
+    {
+      "name": "females",
+      "source": "popYear",
+      "transform": [{"type": "filter", "expr": "datum.Sex == 'Woman'"}]
+    },
+    {
+      "name": "ageGroups",
+      "source": "population",
+      "transform": [{"type": "aggregate", "groupby": ["Age"]}]
+    }
+  ],
+  "scales": [
+    {
+      "name": "y",
+      "type": "band",
+      "range": [{"signal": "height"}, 0],
+      "round": true,
+      "domain": {"data": "ageGroups", "field": "Age"}
+    },
+    {
+      "name": "c",
+      "type": "ordinal",
+      "domain": ["Woman", "Men"],
+      "range": ["#d5855a", "#6c4e97"]
+    },
+    {
+      "name": "c1",
+      "type": "ordinal",
+      "domain": ["Woman", "Men"],
+      "range": ["#d5855a", "#6c4e97"]
+    }
+  ],
+  "marks": [
+    {
+      "type": "text",
+      "interactive": false,
+      "from": {"data": "ageGroups"},
+      "encode": {
+        "enter": {
+          "x": {"signal": "chartWidth + chartPad / 2"},
+          "y": {"scale": "y", "field": "Age", "band": 0.5},
+          "text": {"field": "Age"},
+          "baseline": {"value": "middle"},
+          "align": {"value": "center"},
+          "fill": {"value": "#000"}
+        }
+      }
+    },
+    {
+      "type": "group",
+      "encode": {"update": {"x": {"value": 0}, "height": {"signal": "height"}}},
+      "scales": [
+        {
+          "name": "x",
+          "type": "linear",
+          "range": [{"signal": "chartWidth"}, 0],
+          "nice": true,
+          "zero": true,
+          "domain": {"data": "population", "field": "value"}
+        }
+      ],
+      "axes": [{"orient": "bottom", "scale": "x", "title": "Females"}],
+      "marks": [
+        {
+          "name": "bars",
+          "type": "rect",
+          "from": {"data": "females"},
+          "encode": {
+            "enter": {
+              "x": {"scale": "x", "field": "value"},
+              "x2": {"scale": "x", "value": 0},
+              "y": {"scale": "y", "field": "Age"},
+              "height": {"scale": "y", "band": 1, "offset": -1},
+              "fillOpacity": {"value": 0.6},
+              "fill": {"scale": "c", "field": "Sex"}
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "group",
+      "encode": {
+        "update": {
+          "x": {"signal": "chartWidth + chartPad"},
+          "height": {"signal": "height"}
+        }
+      },
+      "scales": [
+        {
+          "name": "x",
+          "type": "linear",
+          "range": [0, {"signal": "chartWidth"}],
+          "nice": true,
+          "zero": true,
+          "domain": {"data": "population", "field": "value"},
+          "domainMax": 50
+        }
+      ],
+      "axes": [{"orient": "bottom", "scale": "x", "title": "Males"}],
+      "marks": [
+        {
+          "type": "rect",
+          "from": {"data": "males"},
+          "encode": {
+            "enter": {
+              "x": {"scale": "x", "field": "value"},
+              "x2": {"scale": "x", "value": 0},
+              "y": {"scale": "y", "field": "Age"},
+              "height": {"scale": "y", "band": 1, "offset": -1},
+              "fillOpacity": {"value": 0.6},
+              "fill": {"scale": "c", "field": "Sex"}
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "config": {
+    "background": "#fff",
+    "arc": {"fill": "#4572a7"},
+    "area": {"fill": "#4572a7"},
+    "line": {"stroke": "#4572a7", "strokeWidth": 2},
+    "path": {"stroke": "#4572a7"},
+    "rect": {"fill": "#4572a7"},
+    "shape": {"stroke": "#4572a7"},
+    "symbol": {"fill": "#4572a7", "strokeWidth": 1.5, "size": 50},
+    "axis": {
+      "bandPosition": 0.5,
+      "grid": true,
+      "gridColor": "#000000",
+      "gridOpacity": 1,
+      "gridWidth": 0.5,
+      "labelPadding": 10,
+      "tickSize": 5,
+      "tickWidth": 0.5
+    },
+    "axisBand": {"grid": false, "tickExtra": true},
+    "legend": {
+      "labelBaseline": "middle",
+      "labelFontSize": 11,
+      "symbolSize": 50,
+      "symbolType": "square"
+    },
+    "range": {
+      "category": [
+        "#4572a7",
+        "#aa4643",
+        "#8aa453",
+        "#71598e",
+        "#4598ae",
+        "#d98445",
+        "#94aace",
+        "#d09393",
+        "#b9cc98",
+        "#a99cbc"
+      ]
+    }
+  }
+}
